@@ -1,0 +1,27 @@
+<html xmlns:th="https://thymeleaf.org">
+<head>
+    <title>Страница покупок</title>
+</head>
+<body>
+    <form th:action="@{/authorization/logout}" th:method="post">
+        <button onclick="location.href='/authorization/logout'" style="float: right;">Выйти</button>
+    </form>
+    <p>Ваш список покупок</p>
+    <table style="border: 2px solid black;">
+        <tr>
+            <th>Удалить</th>
+            <th>Покупка</th>
+            <th>Метка</th>
+        </tr>
+        <tr th:each="purchase : ${purchases}">
+            <td><button th:onclick="@{location.href='/home/delete?id={id}'(id=${purchase.id})}">Удалить</button></td>
+            <td th:text="${purchase.name}">Name</td>
+            <td><button th:onclick="@{location.href='/home/mark?id={id}&isMarked={isMarked}'(id=${purchase.id},isMarked=${purchase.isMarked})}" th:text="${purchase.isMarked ? '☑' : '☐'}">Mark</button></td>
+        </tr>
+        <tr>
+            <td><button onclick="location.href='/home/add'" style="float: center;">Добавить</button></td>
+        </tr>
+    </table>
+
+</body>
+</html>
