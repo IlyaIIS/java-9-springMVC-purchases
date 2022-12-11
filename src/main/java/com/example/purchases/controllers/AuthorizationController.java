@@ -14,28 +14,28 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Controller
-@RequestMapping("/authorization")
+@RequestMapping("/")
 public class AuthorizationController {
 
     @Autowired
     private UserDAO userDAO;
 
-    @GetMapping("")
+    @GetMapping("/authorization")
     public String defaultRedirect() {
         return "authorization/login";
     }
 
-    @GetMapping("/login")
+    @GetMapping("/authorization/login")
     public String showLoginPage() {
         return "authorization/login";
     }
 
-    @GetMapping("/registration")
+    @GetMapping("/authorization/registration")
     public String showRegisterationPage() {
         return "authorization/registration";
     }
 
-    @PostMapping("/login")
+    @PostMapping("/api/user/login")
     public void tryAuthorize(HttpServletRequest request, HttpServletResponse response, Model model) throws IOException {
         String login = request.getParameter("login");
         String pass = request.getParameter("pass");
@@ -64,7 +64,7 @@ public class AuthorizationController {
         response.sendRedirect(request.getContextPath() + "/home");
     }
 
-    @PostMapping("/registration")
+    @PostMapping("/api/user/register")
     public void doRegistration(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = request.getParameter("email");
         String login = request.getParameter("login");
@@ -103,7 +103,7 @@ public class AuthorizationController {
         response.sendRedirect(request.getContextPath() + "/home");
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/api/user/logout")
     private void logOut(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String sessionId = request.getSession().getId();
         UserProfile profile = userDAO.getUserBySessionId(sessionId);

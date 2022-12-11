@@ -21,7 +21,7 @@ public class UserDAO {
 
     public void addNewUser(UserProfile userProfile) {
         try {
-            jdbcTemplate.update(String.format("INSERT users2(login, pass, email) VALUES ('%s', '%s', '%s');", userProfile.getLogin(), userProfile.getPass(), userProfile.getEmail()));
+            jdbcTemplate.update(String.format("INSERT user(login, pass, email) VALUES ('%s', '%s', '%s');", userProfile.getLogin(), userProfile.getPass(), userProfile.getEmail()));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -29,7 +29,7 @@ public class UserDAO {
 
     public UserProfile getUserByLogin(String login) {
         try {
-            return jdbcTemplate.query("SELECT * FROM users2 WHERE login = '" + login + "';", result -> {
+            return jdbcTemplate.query("SELECT * FROM user WHERE login = '" + login + "';", result -> {
                 if (result.next()) {
                     return new UserProfile(result.getString(1),
                             result.getString(2),

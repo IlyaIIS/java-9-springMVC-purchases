@@ -4,21 +4,25 @@ import com.example.purchases.models.Purchase;
 import com.example.purchases.dao.PurchaseDAO;
 import com.example.purchases.dao.UserDAO;
 import com.example.purchases.models.UserProfile;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.Console;
 import java.io.IOException;
 import java.util.List;
 
 @Controller
-@RequestMapping("/home")
+@RequestMapping("/")
 public class HomeController {
     @Autowired
     PurchaseDAO purchaseDAO;
@@ -56,8 +60,8 @@ public class HomeController {
         return null;
     }
 
-    @GetMapping("")
-    public String showHomePage(HttpServletRequest req, Model model) throws IOException {
+    @GetMapping("/home")
+    public String showHomePage(HttpServletRequest req, Model model) {
         String sessionId = getSessionId(req.getCookies());
 
         if (sessionId == null) {
@@ -72,13 +76,10 @@ public class HomeController {
             return "my_error";
         }
 
-        List<Purchase> purchases = purchaseDAO.getPurchasesByUserLogin(userProfile.getLogin());
-        model.addAttribute("purchases", purchases);
-
         return "home/home";
     }
 
-    @GetMapping("/add")
+    @GetMapping("/home/add")
     public String showAddPurchasePage(HttpServletRequest req, Model model) {
         String validResult = validateUser(req.getCookies(), model);
         if (validResult != null)
@@ -87,7 +88,7 @@ public class HomeController {
         return "home/add";
     }
 
-    @PostMapping("/add")
+    @PostMapping("/api/purchases")
     public void addPurchase(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String sessionId = getSessionId(req.getCookies());
         if (sessionId == null)
@@ -105,8 +106,8 @@ public class HomeController {
         resp.sendRedirect(req.getContextPath() + "/home");
     }
 
-    @GetMapping("/delete")
-    public void deletePurchase(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @DeleteMapping("/api/purchases/{id}")
+    public void deletePurchase(@PathVariable(value = "id") int id, HttpServletRequest req, HttpServletResponse resp) {
         String sessionId = getSessionId(req.getCookies());
         if (sessionId == null)
             return;
@@ -114,29 +115,59 @@ public class HomeController {
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
         if (userProfile == null)
             return;
-
-        int id = Integer.parseInt(req.getParameter("id"));
 
         purchaseDAO.deletePurchase(id);
-
-        resp.sendRedirect(req.getContextPath() + "/home");
     }
 
-    @GetMapping("/mark")
-    public  void markPurchase(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @PutMapping("/api/purchases/{id}/mark")
+    public void markPurchase(@PathVariable(value = "id") int id, HttpServletRequest req, HttpServletResponse resp) {
         String sessionId = getSessionId(req.getCookies());
-        if (sessionId == null)
+        if (sessionId == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
+        }
 
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
-        if (userProfile == null)
+        if (userProfile == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
+        }
 
-        int id = Integer.parseInt(req.getParameter("id"));
         boolean isMarked = Boolean.parseBoolean(req.getParameter("isMarked"));
 
         purchaseDAO.setPurchaseMark(id, !isMarked);
 
-        resp.sendRedirect(req.getContextPath() + "/home");
+        resp.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    @ResponseBody
+    @GetMapping(value = "/api/purchases", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public String returnPurchases(HttpServletRequest req, HttpServletResponse resp) throws JSONException {
+        String sessionId = getSessionId(req.getCookies());
+        if (sessionId == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return "false";
+        }
+
+        UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
+        if (userProfile == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return "false";
+        }
+
+        JSONObject json = new JSONObject();
+        JSONArray jarray = new JSONArray();
+        List<Purchase> purchases = purchaseDAO.getPurchasesByUserLogin(userProfile.getLogin());
+        for (Purchase purchase: purchases) {
+            JSONObject jobj = new JSONObject();
+            jobj.put("name", purchase.getName());
+            jobj.put("id", purchase.getId());
+            jobj.put("isMarked", purchase.isMarked());
+
+            jarray.put(jobj);
+        }
+        json.put("purchases", jarray);
+
+        return json.toString();
     }
 }
