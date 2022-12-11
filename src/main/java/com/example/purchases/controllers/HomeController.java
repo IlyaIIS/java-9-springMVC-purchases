@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
+import static com.example.purchases.services.HelperService.getSessionId;
+
 @Controller
 @RequestMapping("/")
 public class HomeController {
@@ -27,18 +29,6 @@ public class HomeController {
 
     @Autowired
     UserDAO userDAO;
-
-    private String getSessionId(Cookie[] cookies) {
-        String sessionId = null;
-        for(Cookie cookie: cookies) {
-            if (cookie.getName().equals("sessionId")) {
-                sessionId = cookie.getValue();
-                break;
-            }
-        }
-
-        return sessionId;
-    }
 
     private String validateUser(Cookie[] cookies, Model model) {
         String sessionId = getSessionId(cookies);
@@ -59,10 +49,11 @@ public class HomeController {
     }
 
     @GetMapping("/home")
-    public String showHomePage(HttpServletRequest req, Model model) {
+    public String showHomePage(HttpServletRequest req, Model model, HttpServletResponse resp) {
         String sessionId = getSessionId(req.getCookies());
 
         if (sessionId == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             model.addAttribute("error_text", "Error: wrong cookie");
             return "my_error";
         }
@@ -70,6 +61,7 @@ public class HomeController {
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
 
         if (userProfile == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             model.addAttribute("error_text","Error: user not found");
             return "my_error";
         }
@@ -78,10 +70,12 @@ public class HomeController {
     }
 
     @GetMapping("/home/add")
-    public String showAddPurchasePage(HttpServletRequest req, Model model) {
+    public String showAddPurchasePage(HttpServletRequest req, Model model, HttpServletResponse resp) {
         String validResult = validateUser(req.getCookies(), model);
-        if (validResult != null)
+        if (validResult != null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return validResult;
+        }
 
         return "home/add";
     }
@@ -89,12 +83,16 @@ public class HomeController {
     @PostMapping("/api/purchases")
     public void addPurchase(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String sessionId = getSessionId(req.getCookies());
-        if (sessionId == null)
+        if (sessionId == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
+        }
 
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
-        if (userProfile == null)
+        if (userProfile == null){
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
+        }
 
         String name = req.getParameter("purchaseName");
         String login = userProfile.getLogin();
@@ -107,12 +105,16 @@ public class HomeController {
     @DeleteMapping("/api/purchases/{id}")
     public void deletePurchase(@PathVariable(value = "id") int id, HttpServletRequest req, HttpServletResponse resp) {
         String sessionId = getSessionId(req.getCookies());
-        if (sessionId == null)
+        if (sessionId == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
+        }
 
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
-        if (userProfile == null)
+        if (userProfile == null){
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
+        }
 
         purchaseDAO.deletePurchase(id);
     }
@@ -121,21 +123,19 @@ public class HomeController {
     public void markPurchase(@PathVariable(value = "id") int id, HttpServletRequest req, HttpServletResponse resp) {
         String sessionId = getSessionId(req.getCookies());
         if (sessionId == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
         if (userProfile == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         boolean isMarked = Boolean.parseBoolean(req.getParameter("isMarked"));
 
         purchaseDAO.setPurchaseMark(id, !isMarked);
-
-        resp.setStatus(HttpServletResponse.SC_OK);
     }
 
     @ResponseBody
@@ -143,13 +143,13 @@ public class HomeController {
     public String returnPurchases(HttpServletRequest req, HttpServletResponse resp) throws JSONException {
         String sessionId = getSessionId(req.getCookies());
         if (sessionId == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return "false";
         }
 
         UserProfile userProfile = userDAO.getUserBySessionId(sessionId);
         if (userProfile == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return "false";
         }
 
