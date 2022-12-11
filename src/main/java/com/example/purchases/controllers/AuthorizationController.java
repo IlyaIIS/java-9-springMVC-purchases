@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -35,7 +34,7 @@ public class AuthorizationController {
         return "authorization/registration";
     }
 
-    @PostMapping("/api/user/login")
+    @PostMapping("/api/users/login")
     public void tryAuthorize(HttpServletRequest request, HttpServletResponse response, Model model) throws IOException {
         String login = request.getParameter("login");
         String pass = request.getParameter("pass");
@@ -64,7 +63,7 @@ public class AuthorizationController {
         response.sendRedirect(request.getContextPath() + "/home");
     }
 
-    @PostMapping("/api/user/register")
+    @PostMapping("/api/users/register")
     public void doRegistration(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = request.getParameter("email");
         String login = request.getParameter("login");
@@ -103,7 +102,7 @@ public class AuthorizationController {
         response.sendRedirect(request.getContextPath() + "/home");
     }
 
-    @PostMapping("/api/user/logout")
+    @PostMapping("/api/users/logout")
     private void logOut(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String sessionId = request.getSession().getId();
         UserProfile profile = userDAO.getUserBySessionId(sessionId);
